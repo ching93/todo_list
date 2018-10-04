@@ -1,0 +1,88 @@
+<html>
+<head>
+<script
+  src="https://code.jquery.com/jquery-3.3.1.min.js"
+  integrity="sha256-FgpCb/KJQlLNfOu91ta32o/NMZxltwRo8QtmkMRdAu8="
+  crossorigin="anonymous"></script>
+<style>
+	.todo {
+		border: 1px solid blue;
+		border-radius: 3px;
+	}
+	.todo-list {
+		display: flexbox;
+	}
+	.todo-title {
+		font-weight: bold;
+	}
+	.save-btn {
+		color: lightgreen;
+		border: 1px solid green;
+	}
+	.delete-btn {
+		color: red;
+		border: 1px solid darkred;
+	}
+</style>
+</head>
+<body>
+	<div class="navbar">
+	{% if employee %}
+		<span>Current user: {{employee.user.email}}</span>
+		<span>Organisation: {{employee.org.name}}</span>
+		<a href="{% url 'rest_api:logout' %}">Выйти</a>
+	{% else %}
+	<form action="{% url 'rest_api:login' %}" method="POST">
+		<input type="hidden" name="csrfmiddlewaretoken" value="{{csrf_token}}" />
+		<input type="text" name="email">
+		<input type="password" name="password">
+		<select name="org">
+			{% for org in orgs %}<option value="{{org.id}}">{{org.name}}</option>{%endfor%}
+		</select>
+		<button type=submit >Войти</a>
+	</form>
+	{%endif %}
+	</div>
+	<section class="container">
+		<h3>To do:</h6>
+		<form action="{% url 'rest_api:todo_list' %}" method="PUT" id="create_todo">
+			<input type="hidden" name="csrfmiddlewaretoken" value="{{csrf_token}}" />
+			<input type="text" name="title" placeholder="title"><br>
+			<textarea name="text" id="" cols="30" rows="10"></textarea>
+			<button type="submit">Send</button>
+		</form>
+		<div class="todo_list">
+			{%for todo in todolist %}
+			<div class="todo">
+				<span class="todo-title">{{todo.title}}</span><input type="text" value="{{ todo.text }}" />
+				<span class="save-btn">Сохранить</span><span data-pk="{{todo.id}}" class="delete-btn">Удалить</span>
+			</div>
+			{% endfor %}
+		</div>
+	</section>
+	<script>
+	$(document).ready(function() {
+		$("#create_todo").on('submit', create_todo)
+	});
+	function create_todo(e) {
+		e.preventDefault();
+		let data = $(e.target).serializeArray();
+		let url = e.target.getAttribute('action');
+		let method = e.target.getAttribute('method');
+		let csrf = $(e.target).find('[name=csrfmiddlewaretoken]').val();
+		$.ajax({url: url, headers: {'X-CSRFToken': csrf}, data: data, method: method, success: add_todo, error: (data)=>(console.log(data.responseText))});
+	}
+	function add_todo(data) {
+		console.log(data);
+		let template = `
+		<div class="todo">
+				<span class="todo-title">{{todo.title}}</span><input type="text" value="{{ todo.text }}" />
+				<span class="save-btn">Сохранить</span><span data-pk="{{todo.id}}" class="delete-btn">Удалить</span>
+			</div>
+		`.replace('{{todo.title}}',data.title)
+		.replace('{{ todo.text }}', data.text)
+		.replace('{{todo.id}}', data.id);
+	}
+	</script>
+</body>
+</html>
